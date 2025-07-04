@@ -33,6 +33,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
                     >
                         Daftar Nilai
                     </Link>
+                    <Link
+                        href="/dashboard/registrasi"
+                        className="block px-4 py-2 rounded hover:bg-gray-700"
+                    >
+                        Registrasi Mata Kuliah
+                    </Link>
+                    <Link
+                        href="/dashboard/kalender"
+                        className="block px-4 py-2 rounded hover:bg-gray-700"
+                    >
+                        Kalender Akademik
+                    </Link>
                 </nav>
                 <div className="p-4 border-t border-gray-700">
                     <LogoutButton />
