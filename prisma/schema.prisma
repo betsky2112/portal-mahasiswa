@@ -20,4 +20,34 @@ model User {
   password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  Enrollment Enrollment[]
+}
+
+model Course {
+  id          String    @id @default(cuid())
+  code        String    @unique // Contoh: IF201
+  name        String    // Contoh: Dasar Pemrograman
+  description String?
+  credits     Int
+  enrollments Enrollment[]
+}
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  userId    Int
+  courseId  String
+  enrolledAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+}
+
+model AcademicEvent {
+  id          String   @id @default(cuid())
+  title       String
+  date        DateTime
+  description String?
 }
