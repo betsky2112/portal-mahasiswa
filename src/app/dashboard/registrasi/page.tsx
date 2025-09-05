@@ -1,18 +1,28 @@
+// app/dashboard/registrasi/page.tsx
 import prisma from '@/lib/prisma';
-import {
-    Table,
-    TableBody,
-    TableCaption,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import CourseRegistrationClient from './CourseRegistrationClient';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 export default async function RegistrasiPage() {
+    const session = await getServerSession(authOptions);
+    const userEmail = session?.user?.email;
+
     const courses = await prisma.course.findMany();
+    const enrollments = userEmail
+        ? await prisma.enrollment.findMany({
+              where: { user: { email: userEmail } },
+              select: { courseId: true },
+          })
+        : [];
+
+    const enrolledCourseIds = new Set(enrollments.map((e) => e.courseId));
+
+    const coursesWithEnrollmentStatus = courses.map((course) => ({
+        ...course,
+        isEnrolled: enrolledCourseIds.has(course.id),
+    }));
 
     return (
         <div>
@@ -24,30 +34,7 @@ export default async function RegistrasiPage() {
                     diizinkan.
                 </AlertDescription>
             </Alert>
-
-            <Table>
-                <TableCaption>Daftar mata kuliah yang ditawarkan semester ini.</TableCaption>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead className="w-[100px]">Kode</TableHead>
-                        <TableHead>Nama Mata Kuliah</TableHead>
-                        <TableHead>SKS</TableHead>
-                        <TableHead className="text-right">Aksi</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {courses.map((course) => (
-                        <TableRow key={course.id}>
-                            <TableCell className="font-medium">{course.code}</TableCell>
-                            <TableCell>{course.name}</TableCell>
-                            <TableCell>{course.credits}</TableCell>
-                            <TableCell className="text-right">
-                                <Button size="sm">Daftar</Button>
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+            <CourseRegistrationClient courses={coursesWithEnrollmentStatus} />
         </div>
     );
 }
