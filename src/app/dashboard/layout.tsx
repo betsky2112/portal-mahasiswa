@@ -1,57 +1,36 @@
+// app/dashboard/layout.tsx
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
-import LogoutButton from '@/components/auth/LogoutButton';
+import Sidebar from '@/components/layout/Sidebar';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
     const session = await getServerSession(authOptions);
+    if (!session?.user?.id) redirect('/login');
 
-    if (!session) {
-        redirect('/login');
-    }
+    const [pendingTasks, unpaidBills] = await Promise.all([
+        getPendingTasksCount(session.user.id),
+        getUnpaidBillsCount(session.user.id),
+    ]);
 
     return (
         <div className="flex h-screen bg-gray-100">
-            <aside className="w-64 bg-gray-800 text-white flex flex-col">
-                <div className="p-4 border-b border-gray-700">
-                    <h2 className="text-xl font-bold">Portal Mahasiswa</h2>
-                </div>
-                <nav className="flex-1 p-4 space-y-2">
-                    <Link href="/dashboard" className="block px-4 py-2 rounded hover:bg-gray-700">
-                        Profil
-                    </Link>
-                    <Link
-                        href="/dashboard/jadwal"
-                        className="block px-4 py-2 rounded hover:bg-gray-700"
-                    >
-                        Jadwal Kuliah
-                    </Link>
-                    <Link
-                        href="/dashboard/nilai"
-                        className="block px-4 py-2 rounded hover:bg-gray-700"
-                    >
-                        Daftar Nilai
-                    </Link>
-                    <Link
-                        href="/dashboard/registrasi"
-                        className="block px-4 py-2 rounded hover:bg-gray-700"
-                    >
-                        Registrasi Mata Kuliah
-                    </Link>
-                    <Link
-                        href="/dashboard/kalender"
-                        className="block px-4 py-2 rounded hover:bg-gray-700"
-                    >
-                        Kalender Akademik
-                    </Link>
-                </nav>
-                <div className="p-4 border-t border-gray-700">
-                    <LogoutButton />
-                </div>
-            </aside>
+            <Sidebar pendingTasks={pendingTasks} unpaidBills={unpaidBills} />
 
-            <main className="flex-1 p-8 overflow-y-auto">{children}</main>
+            <div className="flex-1 flex flex-col">
+                <div className="bg-yellow-50 border-b border-yellow-200 p-3 text-sm text-yellow-800">
+                    Periode KRS dibuka s/d 20 Sep 2025. Pastikan tidak ada bentrok jadwal.
+                </div>
+
+                <main className="flex-1 p-6 overflow-y-auto">{children}</main>
+            </div>
         </div>
     );
+}
+
+async function getPendingTasksCount(_userId: string) {
+    return 2;
+}
+async function getUnpaidBillsCount(_userId: string) {
+    return 1;
 }
