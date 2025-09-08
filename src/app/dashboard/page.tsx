@@ -1,42 +1,48 @@
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import prisma from '@/lib/prisma';
-import InfoCard from '@/components/ui/InfoCard';
+import HeroCards from '@/components/dashboard/HeroCards';
+import ScheduleToday from '@/components/dashboard/ScheduleToday';
 
-export default async function DashboardPage() {
-    const session = await getServerSession(authOptions);
-
-    const user = await prisma.user.findUnique({
-        where: {
-            email: session?.user?.email ?? '',
-        },
-    });
+export default async function DashboardHome() {
+    const summary = await getAcademicSummary();
+    const bills = await getActiveBills();
+    const schedule = await getTodaySchedule();
 
     return (
-        <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-6">Profil Mahasiswa</h1>
-            <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-                <div className="px-4 py-5 sm:px-6">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">Informasi Akun</h3>
-                    <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                        Detail personal dan informasi akun Anda.
-                    </p>
-                </div>
-                <div className="border-t border-gray-200">
-                    <dl>
-                        <InfoCard label="Nama Lengkap" value={user?.name} />
-                        <InfoCard label="Alamat Email" value={user?.email} />
-                        <InfoCard
-                            label="Terdaftar Sejak"
-                            value={user?.createdAt.toLocaleDateString('id-ID', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric',
-                            })}
-                        />
-                    </dl>
-                </div>
-            </div>
+        <div className="space-y-6">
+            <h1 className="text-2xl font-bold text-text">Dashboard</h1>
+            <HeroCards
+                gpa={summary.gpa}
+                ipSemester={summary.ipSemester}
+                sksTaken={summary.sksTaken}
+                sksMax={summary.sksMax}
+                billsTotal={bills.total}
+                billsCount={bills.count}
+            />
+            <ScheduleToday items={schedule} />
         </div>
     );
+}
+
+async function getAcademicSummary() {
+    return { gpa: 3.47, ipSemester: 3.52, sksTaken: 88, sksMax: 144 };
+}
+async function getActiveBills() {
+    return { total: 2150000, count: 2 };
+}
+async function getTodaySchedule() {
+    return [
+        {
+            id: 'MK001',
+            name: 'Struktur Data',
+            time: '08:00–09:40',
+            room: 'D201',
+            lecturer: 'D. Siregar, M.Kom',
+        },
+        {
+            id: 'MK147',
+            name: 'Basis Data Lanjut',
+            time: '10:00–11:40',
+            room: 'Lab DB-2',
+            lecturer: 'R. Hutabarat, S.Kom',
+        },
+    ];
 }

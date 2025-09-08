@@ -21,13 +21,16 @@ export default function NavLink({
         <Link
             href={href}
             className={clsx(
-                'group flex items center justify-between px-4 py-2 rounded transition',
-                active ? 'bg-gray-700 text-white' : 'text-gray-200 hover:bg-grey-700',
+                'group relative flex items-center justify-between rounded-lg px-4 py-2 text-sm transition font-medium',
+                active
+                    ? 'bg-primary text-white'
+                    : 'text-text hover:bg-primary/10 hover:text-primary',
             )}
         >
-            <span className="truncate">{children}</span>
+            <span>{children}</span>
+
             {typeof badge === 'number' && badge > 0 && (
-                <span className="ml-2 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gray-600 px-2 text-xs">
+                <span className="ml-2 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-secondary px-2 text-[11px] font-semibold text-white">
                     {badge}
                 </span>
             )}
