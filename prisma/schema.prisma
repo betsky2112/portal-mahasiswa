@@ -32,8 +32,8 @@ model User {
 
 model Course {
   id          String    @id @default(cuid())
-  code        String    @unique // Contoh: IF201
-  name        String    // Contoh: Dasar Pemrograman
+  code        String    @unique
+  name        String
   description String?
   credits     Int
   enrollments Enrollment[]
@@ -56,4 +56,46 @@ model AcademicEvent {
   title       String
   date        DateTime
   description String?
+}
+
+model Bill {
+  id        String     @id @db.VarChar(36)
+  studentId String
+  name      String
+  amount    Int
+  dueDate   DateTime
+  status    BillStatus @default(UNPAID)
+  payments  Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([studentId])
+}
+
+model Payment {
+  id        String    @id @default(cuid())
+  billId    String
+  bill      Bill      @relation(fields: [billId], references: [id], onDelete: Cascade)
+  orderId   String    @unique
+  amount    Int
+  status    PayStatus @default(PENDING)
+  raw       Json?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+
+enum BillStatus {
+  UNPAID
+  PAID
+  OVERDUE
+}
+
+enum PayStatus {
+  PENDING
+  PAID
+  FAILED
+  EXPIRED
+  CANCELLED
 }
