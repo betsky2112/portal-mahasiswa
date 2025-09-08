@@ -12,7 +12,7 @@ export default function Sidebar({
         <aside className="relative z-10 w-72 shrink-0 border-r border-gray-200 bg-bg text-text">
             <div className="px-5 py-4 border-b border-gray-200">
                 <h2 className="text-lg font-bold text-primary">Portal Mahasiswa</h2>
-                <p className="text-xs text-gray-500">Fresh & Modern</p>
+                {/* <p className="text-xs text-gray-500">Fresh & Modern</p> */}
             </div>
 
             <nav className="p-3 space-y-1">
