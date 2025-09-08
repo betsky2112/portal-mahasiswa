@@ -70,7 +70,7 @@ export default function BillsTable({
                                                 Detail
                                             </Link>
                                         ) : (
-                                            <PayButton billId={b.id} amount={b.amount} />
+                                            <PayButton billId={b.id} />
                                         )}
                                     </td>
                                 </tr>

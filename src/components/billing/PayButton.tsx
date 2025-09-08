@@ -1,20 +1,27 @@
 'use client';
 
 import { useState } from 'react';
-import { formatIDR } from '@/lib/format';
 
-export default function PayButton({ billId, amount }: { billId: string; amount: number }) {
+export default function PayButton({ billId }: { billId: string }) {
     const [loading, setLoading] = useState(false);
 
     const pay = async () => {
         setLoading(true);
         try {
-            await new Promise((r) => setTimeout(r, 900));
-            alert(
-                `Invoice ${billId} siap dibayar: ${formatIDR(
-                    amount,
-                )}.\n(Integrasikan ke gateway pembayaran di langkah berikutnya)`,
-            );
+            const res = await fetch('/api/pay', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ billId }),
+            });
+            const data = await res.json();
+            if (!res.ok || !data?.redirect_url) {
+                alert(data?.error || 'Gagal membuat transaksi.');
+                return;
+            }
+            window.location.href = data.redirect_url;
+        } catch (e) {
+            console.error(e);
+            alert('Gagal memproses pembayaran.');
         } finally {
             setLoading(false);
         }

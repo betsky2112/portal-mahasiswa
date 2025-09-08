@@ -1,17 +1,54 @@
+import prisma from '@/lib/prisma';
+import { formatIDR } from '@/lib/format';
 import BillsTable from '@/components/billing/BillsTable';
 import BillFilters from '@/components/billing/BillFilters';
-import { formatIDR } from '@/lib/format';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { redirect } from 'next/navigation';
+import { Prisma } from '@prisma/client';
 
 export default async function BillsPage({
     searchParams,
 }: {
     searchParams?: { q?: string; status?: string; page?: string };
 }) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) redirect('/login');
+
     const q = (searchParams?.q ?? '').trim();
     const status = (searchParams?.status ?? 'all') as 'all' | 'unpaid' | 'paid' | 'overdue';
-    const page = Number(searchParams?.page ?? 1);
+    const page = Math.max(1, Number(searchParams?.page ?? 1));
+    const perPage = 8;
 
-    const { rows, total, perPage } = await getBills({ q, status, page });
+    const where: Prisma.BillWhereInput = {
+        studentId: session.user.id,
+        ...(q
+            ? {
+                  OR: [
+                      { id: { contains: q, mode: 'insensitive' } },
+                      { name: { contains: q, mode: 'insensitive' } },
+                  ],
+              }
+            : {}),
+        ...(status === 'all'
+            ? {}
+            : {
+                  status: status === 'unpaid' ? 'UNPAID' : status === 'paid' ? 'PAID' : 'OVERDUE',
+              }),
+    } as const;
+
+    const [total, rows] = await Promise.all([
+        prisma.bill.count({ where }),
+        prisma.bill.findMany({
+            where,
+            orderBy: [{ dueDate: 'asc' }],
+            take: perPage,
+            skip: (page - 1) * perPage,
+            select: { id: true, name: true, dueDate: true, amount: true, status: true },
+        }),
+    ]);
+
+    const tunggakan = rows.filter((r) => r.status !== 'PAID').reduce((a, b) => a + b.amount, 0);
 
     return (
         <div className="space-y-6">
@@ -23,68 +60,28 @@ export default async function BillsPage({
                     </p>
                 </div>
                 <div className="rounded-lg bg-secondary/10 px-3 py-2 text-sm text-secondary font-medium">
-                    Est. Tunggakan:{' '}
-                    {formatIDR(
-                        rows.filter((r) => r.status !== 'paid').reduce((a, b) => a + b.amount, 0),
-                    )}
+                    Est. Tunggakan: {formatIDR(tunggakan)}
                 </div>
             </header>
 
             <BillFilters current={{ q, status }} />
-
-            <BillsTable data={rows} total={total} page={page} perPage={perPage} />
+            <BillsTable
+                data={rows.map((r) => ({
+                    id: r.id,
+                    name: r.name,
+                    dueDate: r.dueDate.toISOString(),
+                    amount: r.amount,
+                    status:
+                        r.status === 'PAID'
+                            ? 'paid'
+                            : r.status === 'OVERDUE'
+                            ? 'overdue'
+                            : 'unpaid',
+                }))}
+                total={total}
+                page={page}
+                perPage={perPage}
+            />
         </div>
     );
-}
-
-async function getBills({
-    q,
-    status,
-    page,
-}: {
-    q: string;
-    status: 'all' | 'unpaid' | 'paid' | 'overdue';
-    page: number;
-}) {
-    const perPage = 8;
-    const ALL = [
-        {
-            id: 'INV-2025-001',
-            name: 'SPP Ganjil 2025',
-            dueDate: '2025-09-25',
-            amount: 1500000,
-            status: 'unpaid' as const,
-        },
-        {
-            id: 'INV-2025-002',
-            name: 'Laboratorium',
-            dueDate: '2025-09-18',
-            amount: 350000,
-            status: 'overdue' as const,
-        },
-        {
-            id: 'INV-2025-003',
-            name: 'Perpustakaan',
-            dueDate: '2025-10-10',
-            amount: 300000,
-            status: 'unpaid' as const,
-        },
-        {
-            id: 'INV-2025-004',
-            name: 'Almamater',
-            dueDate: '2025-08-10',
-            amount: 0,
-            status: 'paid' as const,
-        },
-    ];
-    let rows = ALL.filter(
-        (r) =>
-            (q
-                ? r.id.toLowerCase().includes(q.toLowerCase()) ||
-                  r.name.toLowerCase().includes(q.toLowerCase())
-                : true) && (status === 'all' ? true : r.status === status),
-    );
-    const total = rows.length;
-    rows = rows.slice((page - 1) * perPage, page * perPage);
-    return { rows, total, perPage };
 }
